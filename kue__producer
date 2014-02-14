@@ -27,7 +27,7 @@ rl.on('line', function(line) {
     // create a job
     var job = jobs.create('redirect', {
       source: item['inUrl'],
-      destination: item['outUrl']
+      destination: item['actualOutUrl']
     }).attempts(5).save(function (err) {
       if (err) {
         log('error saving message to queue: ' + err);
