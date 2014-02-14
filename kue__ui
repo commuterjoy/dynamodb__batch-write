@@ -1,0 +1,4 @@
+// curl -s localhost:3000/stats
+ 
+var kue = require('kue');
+kue.app.listen(3000);

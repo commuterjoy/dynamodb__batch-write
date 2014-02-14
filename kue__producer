@@ -1,0 +1,43 @@
+var kue = require('kue')
+  , fs = require('fs')
+  , readline = require('readline')
+  , stream = require('stream')
+  , jobs = kue.createQueue()
+  , path = 'redirects_artifact_redirects_succeeded.json'
+  , debug = false
+  , log = function (msg) {
+      if (debug) console.log(msg);
+  };
+ 
+// -------- producer
+ 
+var instream = fs.createReadStream(path);
+ 
+var rl = readline.createInterface({
+    input: instream,
+    terminal: false
+});
+ 
+rl.on('line', function(line) {
+
+    var item = JSON.parse(line);
+    
+    if (Math.random()*1000<1) log("creating job for: " + item['inUrl'])
+    
+    // create a job
+    var job = jobs.create('redirect', {
+      source: item['inUrl'],
+      destination: item['outUrl']
+    }).attempts(5).save(function (err) {
+      if (err) {
+        log('error saving message to queue: ' + err);
+      }
+    });
+ 
+    job.on('failed', function(){
+      console.log("Job failed: " + job.id);
+    });
+ 
+}, function (err, data) {
+  log(err, data);
+});

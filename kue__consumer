@@ -1,0 +1,57 @@
+var kue = require('kue')
+  , stream = require('stream')
+  , AWS = require('aws-sdk')
+  , queue = kue.createQueue()
+  , debug = false
+  , util = require('util')
+  , log = function (msg) {
+    if (debug) console.log(message)
+  };
+ 
+// AWS shizzle
+ 
+AWS.config.loadFromPath('./config.json');
+var dynamodb = new AWS.DynamoDB();
+ 
+var jobBuffer = [];
+ 
+queue.process('redirect', 25, function(job, done) {
+ 
+  log('processing job %d', job.id);
+ 
+  jobBuffer.push({ job: job, done: done });
+ 
+  if (jobBuffer.length === 25) {
+    write(jobBuffer);
+    jobBuffer = []; // reset buffer
+  }
+ 
+});
+ 
+var write = function (batch) {
+ 
+  dynamodb.batchWriteItem({
+     "RequestItems": {
+        "redirects_test" : batch.map(function (item) {
+            return {
+              "PutRequest": {
+                "Item": {
+                  "source": { "S": item.job.data.source },
+                  "destination": { "S": item.job.data.destination }
+                }
+              }
+            }
+        })
+     }
+  }, function (err, data) {
+ 
+       console.log(util.inspect(data, false, null));
+ 
+       // mark all the jobs as done
+       batch.forEach(function (j) {
+         j.done();
+       })
+ 
+  });
+ 
+}
