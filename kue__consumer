@@ -36,7 +36,7 @@ var sendToDynamo = function (batch) {
  
   dynamodb.batchWriteItem({
      "RequestItems": {
-        "redirects_test" : batch.map(function (item) {
+        "redirects" : batch.map(function (item) {
             return {
               "PutRequest": {
                 "Item": {
